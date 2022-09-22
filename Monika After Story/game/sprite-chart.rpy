@@ -3838,7 +3838,7 @@ init -3 python:
 
         def set_acs(self, acs, wear):
             """
-            Basically a single function so callers don't need to 
+            Basically a single function so callers don't need to
             if-statement-toggle wearing and removal of ACS.
 
             IN:
@@ -7591,7 +7591,7 @@ init -3 python:
         Use the functions to modify outfit data as appropriate.
 
         Supports:
-            - preventing ACS from being removed 
+            - preventing ACS from being removed
             - preventing hair or ACS from being worn
         """
 
@@ -7634,7 +7634,7 @@ init -3 python:
         def set_acs_change_all(self, value):
             """
             Enables or disables ALL ACS changing as part of outfit mode
-            
+
             IN:
                 value - pass True to enable, False to disable
             """
@@ -9603,6 +9603,32 @@ python early:
                 list of displayables
             """
             return self.transform_map.values()
+
+
+        class MASMoniTalkTransform(renpy.display.core.Displayable):
+            """
+            A displayable which makes Monika's mouth motions for dialogue possible.
+            """
+            STEP_START = "start"
+            STEP_END = "end"
+
+            current_img = None
+            current_step = STEP_START
+            next_step = STEP_END
+
+            def __init__(self, open_eyes_img, closed_eyes_img, last_line):
+                """
+                Constructor
+                """
+                super(MASMoniTalkTransform, self).__init__(self)
+
+
+
+
+
+
+
+
 
 # # # END: Idle disp stuff
 
