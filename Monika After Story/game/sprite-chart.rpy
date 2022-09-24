@@ -9604,33 +9604,80 @@ python early:
             """
             return self.transform_map.values()
 
-
-        class MASMoniTalkTransform(renpy.display.core.Displayable):
-            """
-            A displayable which makes Monika's mouth motions for dialogue possible.
-            """
-            STEP_START = "start"
-            STEP_END = "end"
-
-            current_img = None
-            current_step = STEP_START
-            next_step = STEP_END
-
-            def __init__(self, open_eyes_img, closed_eyes_img, last_line):
-                """
-                Constructor
-                """
-                super(MASMoniTalkTransform, self).__init__(self)
-
-
-
-
-
-
-
-
-
 # # # END: Idle disp stuff
+
+    class MASMoniTalkTransform(renpy.display.core.Displayable):
+        """
+        A displayable which makes Monika's mouth motions for dialogue possible.
+        """
+        STEP_START = "start"
+        STEP_END = "end"
+
+        current_img = None
+        current_step = STEP_START
+        next_step = STEP_END
+
+        DIS_DUR = 0.1
+
+        BLIT_COORDS = (0, 0)
+
+
+        def __init__(self, norm_mouth_img, last_line):
+            """
+            Constructor
+            """
+            super(MASMoniTalkTransform, self).__init__(self)
+
+            self.norm_mouth_code = norm_mouth_img
+            self.norm_mouth_img = renpy.displayimage.ImageReference(norm_mouth_img)
+
+            img_map = {
+                self.norm_mouth_code: self.norm_mouth_img
+            }
+            for num in range(0, 19):
+                current_mouth_code = norm_mouth_img + "_viseme" + str(num)
+                img_map[current_mouth_code] = renpy.displayimage.ImageReference(norm_mouth_img + "_viseme" + str(num))
+
+            self.transform_map = dict()
+
+            for first_img_code in img_map:
+                for second_img_code in img_map:
+                    if first_img_code != second_img_code:
+                        self.transform.map[(first_img_code, second_img_code)] = renpy.display.transition.Dissolve(
+                            time=MASMoniTalkTransform.DIS_DUR,
+                            old_widget=img_map[first_img_code],
+                            new_widget=img_map[second_img_code],
+                            alpha=True
+                        )
+
+            self._last_st = 0.0
+            self.current_st = 0.0
+            self.redraw_st = 0.0
+
+            self.timing_information = mas_textanalysis.process_text(last_line)
+            self.redraw_time = 0.01
+
+        def render(self, width, height, st, at):
+            """
+            Render of this disp
+            """
+
+            img_render = renpy.render(self.current_img, width, height, render_st, at)
+            rv = renpy.Render(img_render.width, img_render.height)
+            rv.blit(img_render, MASMoniTalkTransform.BLIT_COORDS)
+
+            renpy.redraw(self, redraw_time)
+
+            return rv
+
+        def visit(self):
+            """
+            Returns imgs for prediction
+
+            OUT:
+                list of displayables
+            """
+            return self.transform_map.values()
 
 init -2 python in mas_sprites:
     # base-related sprtie stuff

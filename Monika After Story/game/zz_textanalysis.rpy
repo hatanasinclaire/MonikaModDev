@@ -14,8 +14,9 @@ init -500 python in mas_textanalysis:
             The function checks the timing information so that the facial animation will finish at the same time as the text on the screen finishes printing.
 
             Any given line may vary characters per second (hereon referred to as "cps") within, using Ren'Py's timing tags {cps=}{/cps}, {w=}, and {fast}.
-            Therefore, the output is broken into "chunks" of constant cps. If, for example, the first part of a line is at default speed and the second half
-            uses a {cps} tag to display at half speed, those are two separate chunks. Waits specified with {w=} are also their own chunk.
+            Therefore, the output is recursively evaulated as "chunks" of constant cps. If, for example, the first part of a line is at default speed and the
+            second half uses a {cps} tag to display at half speed, those are two separate chunks. Waits specified with {w=} are also their own chunk. In the
+            final output, each viseme is specified with the cps from its chunk.
 
             Dialogue before a {fast} tag is shown instantly in Ren'Py. Therefore, any text before such a tag will not be converted to visemes.
 
@@ -23,8 +24,8 @@ init -500 python in mas_textanalysis:
                 input_string - the string to be converted.
                 input_cps - used for recursive purposes, can also manually set the cps of a string with this. Defaults to the cps specified by game settings.
             Outputs:
-                list of tuples - each item in the list is a "chunk" of constant cps: the first item in the tuple is the list of visemes, and the second is
-                                a float specifying how many seconds each viseme is shown.
+                list of tuples - each item in the list is a tuple with two elements: the first is the number of the viseme, and the second is a float
+                specifying how many seconds that viseme is shown.
 
             Mechanism:
                 The function first uses regex to check for timing tag and to break the dialogue into timing "chunks" recursively.
@@ -40,7 +41,7 @@ init -500 python in mas_textanalysis:
                 different sounds ("phonemes") commonly used in English, there are only half as many different facial shapes ("visemes") as some sounds will
                 make the same mouth shape. For example, the mouth makes the same shape when pronouncing "cat" and "cut".
 
-                The function then calculates how many seconds are required for each viseme to be displayed, and includes this value in the "chunk" information.
+                The function then calculates how many seconds are required for each viseme to be displayed, and includes this value in a tuple.
         """
 
         if input_string == "":
@@ -48,7 +49,7 @@ init -500 python in mas_textanalysis:
 
         # set cps
         if input_cps == None:
-            cps = preferences.text_cps
+            cps = renpy.game.preferences.text_cps
         else:
             cps = input_cps
 
@@ -63,9 +64,9 @@ init -500 python in mas_textanalysis:
         if cps_check is not None:
             cps_amount = re.search("{cps=\*?[0-9.]+}", cps_check.group(0)).group(0)
             if "*" in cps_amount: # tag uses a cps multiplier
-                cps_override = cps * float(re.sub("[^0-9*]+", "", cps_amount))
+                cps_override = cps * float(re.sub("[^0-9.]+", "", cps_amount))
             else: # tag uses a raw cps value
-                cps_override = float(re.sub("[^0-9*]+", "", cps_amount))
+                cps_override = float(re.sub("[^0-9.]+", "", cps_amount))
 
             split_regex_line = re.split("{cps=\*?[0-9.]+}(.*?){/cps}", regex_line, maxsplit = 1)
             return process_text(split_regex_line[0], input_cps = cps) + process_text(split_regex_line[1], input_cps=cps_override) + process_text(split_regex_line[2], input_cps = cps)
@@ -79,7 +80,7 @@ init -500 python in mas_textanalysis:
             wait_amount = re.sub("[^0-9.]+", "", wait_string)
 
             split_regex_line = re.split("{w=[0-9\.\*]+}", regex_line, maxsplit = 1)
-            return process_text(split_regex_line[0], input_cps = cps) + [([0], float(wait_amount))] + process_text(split_regex_line[1], input_cps = cps)
+            return process_text(split_regex_line[0], input_cps = cps) + [(0, float(wait_amount))] + process_text(split_regex_line[1], input_cps = cps)
 
         # strip out any remaining tags
         regex_line = re.sub("{[^}]*}", "", regex_line)
@@ -121,7 +122,11 @@ init -500 python in mas_textanalysis:
         # round timing to closest 1/100ths of a second
         seconds_per_viseme = round(seconds_per_viseme, 2)
 
-        return [(viseme_list, seconds_per_viseme)]
+        output_list = []
+        for viseme in viseme_list:
+            output_list.append((viseme, seconds_per_viseme))
+
+        return output_list
 
     def regexed_text_to_phonemes(input_string):
         """
