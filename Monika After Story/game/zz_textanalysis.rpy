@@ -3,8 +3,8 @@
 init -500 python in mas_textanalysis:
 
     import re
-    import eng_to_ipa as ipa
-    # import inflect
+    # import eng_to_ipa as ipa # Needs Python3
+    # import inflect # Needs Python3
     # p = inflect.engine()
 
     def process_text(input_string, input_cps = None):
@@ -140,10 +140,14 @@ init -500 python in mas_textanalysis:
         """
 
         # convert to IPA
-        ipa_line = ipa.convert(input_string)
+        # ipa_line = ipa.convert(input_string)
 
         # check to see if we have pronunciations for unknown words
-        ipa_line = re.sub("[\S]+[*]{1}", lambda unknown_words: unknown_words_to_ipa(unknown_words.group(0)), ipa_line)
+        # ipa_line = re.sub("[\S]+\*", lambda unknown_words: unknown_words_to_ipa(unknown_words.group(0)), ipa_line)
+
+        # Reduced version of regexed_text_to_phonemes() functionality as eng-to-ipa requires Py3 / R8 migration
+
+        ipa_line = re.sub("[\S]+", lambda unknown_words: unknown_words_to_ipa(unknown_words.group(0)), input_string)
 
         return ipa_line
 
@@ -159,84 +163,84 @@ init -500 python in mas_textanalysis:
             Output: list of integers - indicating sequence of visemes (mouth shapes).
         """
 
-        ipa_trigraphs = [
-            ("aɪɹ", [12,16,2]),
-            ("aʊɹ", [12,14,2])
-        ]
+        ipa_trigraphs = {
+            "aɪɹ": [12,16,2],
+            "aʊɹ": [12,14,2]
+        }
 
-        ipa_digraphs = [
-            ("eɪ", [14,16]),
-            ("oʊ", [18,14]),
-            ("aɪ", [12,16]),
-            ("aʊ", [12,14]),
-            ("ɔɪ", [13,16]),
-            ("ju", [16,17]),
-            ("ɪɹ", [16,2]),
-            ("ɛɹ", [14,2]),
-            ("ʊɹ", [14,2]),
-            ("ɔɹ", [13,2]),
-            ("ɑɹ", [12,2]),
-            ("tʃ", [8,5]),
-            ("dʒ", [8,5]),
-            ("dz", [4]),
-            ("dʑ", [5]),
-            ("tɕ", [5]),
-            ("ts", [8,4])
-        ]
+        ipa_digraphs = {
+            "eɪ": [14,16],
+            "oʊ": [18,14],
+            "aɪ": [12,16],
+            "aʊ": [12,14],
+            "ɔɪ": [13,16],
+            "ju": [16,17],
+            "ɪɹ": [16,2],
+            "ɛɹ": [14,2],
+            "ʊɹ": [14,2],
+            "ɔɹ": [13,2],
+            "ɑɹ": [12,2],
+            "tʃ": [8,5],
+            "dʒ": [8,5],
+            "dz": [4],
+            "dʑ": [5],
+            "tɕ": [5],
+            "ts": [8,4]
+        }
 
-        ipa_single_characters = [
-            (".", [0]),
-            ("?", [0]),
-            ("!", [0]),
-            (",", [0]),
-            (";", [0]),
-            (":", [0]),
-            ("i", [16]),
-            ("ɪ", [16]),
-            ("ɛ", [14]),
-            ("æ", [11]),
-            ("ɑ", [12]),
-            ("a", [12]),
-            ("ɔ", [13]),
-            ("ʊ", [14]),
-            ("u", [17]),
-            ("ʌ", [11]),
-            ("ə", [11]),
-            ("ɝ", [15]),
-            ("ɚ", [11]),
-            ("w", [17]),
-            ("j", [16]),
-            ("o", [18]),
-            ("p", [10]),
-            ("b", [10]),
-            ("t", [8]),
-            ("d", [8]),
-            ("k", [9]),
-            ("g", [9]),
-            ("m", [10]),
-            ("n", [8]),
-            ("ŋ", [9]),
-            ("f", [7]),
-            ("v", [7]),
-            ("θ", [8]),
-            ("ð", [6]),
-            ("s", [4]),
-            ("z", [4]),
-            ("ʃ", [5]),
-            ("ʒ", [5]),
-            ("h", [1]),
-            ("l", [3]),
-            ("ɹ", [2]),
-            ("r", [2]),
-            ("ɾ", [8]),
-            ("ç", [1]),
-            ("ɕ", [5]),
-            ("ɸ", [1]),
-            ("ɲ", [8]),
-            ("ɴ", [8]),
-            ("ʑ", [5]),
-            ("ɯ", [16])
-        ]
+        ipa_single_characters = {
+            ".": [0],
+            "?": [0],
+            "!": [0],
+            ",": [0],
+            ";": [0],
+            ":": [0],
+            "i": [16],
+            "ɪ": [16],
+            "ɛ": [14],
+            "æ": [11],
+            "ɑ": [12],
+            "a": [12],
+            "ɔ": [13],
+            "ʊ": [14],
+            "u": [17],
+            "ʌ": [11],
+            "ə": [11],
+            "ɝ": [15],
+            "ɚ": [11],
+            "w": [17],
+            "j": [16],
+            "o": [18],
+            "p": [10],
+            "b": [10],
+            "t": [8],
+            "d": [8],
+            "k": [9],
+            "g": [9],
+            "m": [10],
+            "n": [8],
+            "ŋ": [9],
+            "f": [7],
+            "v": [7],
+            "θ": [8],
+            "ð": [6],
+            "s": [4],
+            "z": [4],
+            "ʃ": [5],
+            "ʒ": [5],
+            "h": [1],
+            "l": [3],
+            "ɹ": [2],
+            "r": [2],
+            "ɾ": [8],
+            "ç": [1],
+            "ɕ": [5],
+            "ɸ": [1],
+            "ɲ": [8],
+            "ɴ": [8],
+            "ʑ": [5],
+            "ɯ": [16]
+        }
 
         phoneme_list = input_string
         viseme_list = []
@@ -248,29 +252,23 @@ init -500 python in mas_textanalysis:
             # TRIGRAPHS
             if len(phoneme_list) >= 3:
                 first_three = phoneme_list[:3]
-                for phoneme in ipa_trigraphs:
-                    if first_three == phoneme[0]:
-                        current_viseme = phoneme[1]
-                        phoneme_list = phoneme_list[3:]
-                        break
+                if first_three in ipa_trigraphs:
+                    current_viseme = ipa_trigraphs[first_three]
+                    phoneme_list = phoneme_list[3:]
 
             # DIGRAPHS
             if len(phoneme_list) >= 2 and current_viseme == []:
                 first_two = phoneme_list[:2]
-                for phoneme in ipa_digraphs:
-                    if first_two == phoneme[0]:
-                        current_viseme = phoneme[1]
-                        phoneme_list = phoneme_list[2:]
-                        break
+                if first_two in ipa_digraphs:
+                    current_viseme = ipa_digraphs[first_two]
+                    phoneme_list = phoneme_list[2:]
 
             # SINGLE LETTER
             if current_viseme == []:
                 first_one = phoneme_list[:1]
-                for phoneme in ipa_single_characters:
-                    if first_one == phoneme[0]:
-                        current_viseme = phoneme[1]
-                        phoneme_list = phoneme_list[1:]
-                        break
+                if first_one in ipa_single_characters:
+                    current_viseme = ipa_single_characters[first_one]
+                    phoneme_list = phoneme_list[1:]
 
             if current_viseme != []:
                 viseme_list.extend(current_viseme)
@@ -315,79 +313,79 @@ init -500 python in mas_textanalysis:
         # this uses relatively naive substitution of consonant and vowel sounds.
         # it will not always be perfect, but it generates mouth movements and that is better than no mouth movements.
 
-        pronunciation_trigraphs = [
-            ("pph", "f"),
-            ("rrh", "r"),
-            ("sch", "sk"),
-            ("tch", "tʃ"),
-            ("eau", "oʊ"),
-            ("syn", "sɪn")
-        ]
+        pronunciation_trigraphs = {
+            "pph": "f",
+            "rrh": "r",
+            "sch": "sk",
+            "tch": "tʃ",
+            "eau": "oʊ",
+            "syn": "sɪn"
+        }
 
-        pronunciation_digraphs = [
-            ("bb", "b"),
-            ("cc", "k"),
-            ("ch", "tʃ"),
-            ("ck", "k"),
-            ("dd", "d"),
-            ("dg", "dʒ"),
-            ("ff", "f"),
-            ("gg", "ɡ"),
-            ("gh", "f"),
-            ("kk", "k"),
-            ("kh", "k"),
-            ("ll", "l"),
-            ("mm", "m"),
-            ("nn", "n"),
-            ("ng", "ŋ"),
-            ("pp", "p"),
-            ("ph", "f"),
-            ("rr", "r"),
-            ("rh", "r"),
-            ("sc", "s"),
-            ("sh", "ʃ"),
-            ("ss", "s"),
-            ("th", "θ"),
-            ("tr", "tʃ"),
-            ("tt", "t"),
-            ("vv", "v"),
-            ("xc", "ks"),
-            ("zz", "z"),
-            ("aw", "ɔ"),
-            ("ae", "i"),
-            ("eu", "ju"),
-            ("oi", "ɔɪ"),
-            ("oo", "u")
-        ]
+        pronunciation_digraphs = {
+            "bb": "b",
+            "cc": "k",
+            "ch": "tʃ",
+            "ck": "k",
+            "dd": "d",
+            "dg": "dʒ",
+            "ff": "f",
+            "gg": "ɡ",
+            "gh": "f",
+            "kk": "k",
+            "kh": "k",
+            "ll": "l",
+            "mm": "m",
+            "nn": "n",
+            "ng": "ŋ",
+            "pp": "p",
+            "ph": "f",
+            "rr": "r",
+            "rh": "r",
+            "sc": "s",
+            "sh": "ʃ",
+            "ss": "s",
+            "th": "θ",
+            "tr": "tʃ",
+            "tt": "t",
+            "vv": "v",
+            "xc": "ks",
+            "zz": "z",
+            "aw": "ɔ",
+            "ae": "i",
+            "eu": "ju",
+            "oi": "ɔɪ",
+            "oo": "u"
+        }
 
-        pronunciation_single_characters = [
-            ("a", "æ"),
-            ("b", "b"),
-            ("c", "k"),
-            ("d", "d"),
-            ("e", "ɛ"),
-            ("f", "f"),
-            ("g", "g"),
-            ("h", "h"),
-            ("i", "ɪ"),
-            ("j", "dʒ"),
-            ("k", "k"),
-            ("l", "l"),
-            ("m", "m"),
-            ("n", "n"),
-            ("o", "ɑ"),
-            ("p", "p"),
-            ("q", "kw"),
-            ("r", "ɹ"),
-            ("s", "s"),
-            ("t", "t"),
-            ("u", "ʌ"),
-            ("v", "v"),
-            ("w", "w"),
-            ("x", "ks"),
-            ("y", "j"),
-            ("z", "z"),
-        ]
+        pronunciation_single_characters = {
+            "a": "æ",
+            "b": "b",
+            "c": "k",
+            "d": "d",
+            "e": "ɛ",
+            "f": "f",
+            "g": "g",
+            "h": "h",
+            "i": "ɪ",
+            "j": "dʒ",
+            "k": "k",
+            "l": "l",
+            "m": "m",
+            "n": "n",
+            "o": "ɑ",
+            "p": "p",
+            "q": "kw",
+            "r": "ɹ",
+            "s": "s",
+            "t": "t",
+            "u": "ʌ",
+            "v": "v",
+            "w": "w",
+            "x": "ks",
+            "y": "j",
+            "z": "z"
+        }
 
         unknown_word = input_string.lower()
 
@@ -397,29 +395,23 @@ init -500 python in mas_textanalysis:
             # TRIGRAPHS
             if len(unknown_word) >= 3:
                 first_three = unknown_word[:3]
-                for sound in pronunciation_trigraphs:
-                    if first_three == sound[0]:
-                        current_sound = sound[1]
-                        unknown_word = unknown_word[3:]
-                        break
+                if first_three in pronunciation_trigraphs:
+                    current_sound = pronunciation_trigraphs[first_three]
+                    unknown_word = unknown_word[3:]
 
             # DIGRAPHS
             if len(unknown_word) >= 2 and current_sound == "":
                 first_two = unknown_word[:2]
-                for sound in pronunciation_digraphs:
-                    if first_two == sound[0]:
-                        current_sound = sound[1]
-                        unknown_word = unknown_word[2:]
-                        break
+                if first_two in pronunciation_digraphs:
+                    current_sound = pronunciation_digraphs[first_two]
+                    unknown_word = unknown_word[2:]
 
             # SINGLE LETTER
             if current_sound == "":
                 first_one = unknown_word[:1]
-                for sound in pronunciation_single_characters:
-                    if first_one == sound[0]:
-                        current_sound = sound[1]
-                        unknown_word = unknown_word[1:]
-                        break
+                if first_one in pronunciation_single_characters:
+                    current_sound = pronunciation_single_characters[first_one]
+                    unknown_word = unknown_word[1:]
 
             if current_sound != "":
                 replacement = replacement + current_sound
