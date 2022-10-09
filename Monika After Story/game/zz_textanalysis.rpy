@@ -419,3 +419,40 @@ init -500 python in mas_textanalysis:
                 unknown_word = unknown_word[1:]
 
         return replacement
+
+    def process_list(input_list):
+        """
+            Performs final processing on an input generated from process_text().
+
+            It first removes any trailing "0" (silent, closed mouth) phonemes from the end of the list. 
+            Then, any two consecutive tuples that have the same phoneme are merged. In this way, the
+            MASMoniTalkTransform() transform doesn't have to worry about transitioning from the same
+            phoneme to itself - any two consecutive tuples are guaranteed to be different. 
+
+            Input: list of tuples - each item in the list is a tuple with two elements: the first is the
+            number of the viseme, and the second is a float specifying how many seconds that viseme is
+            shown. The output generated from process_text). 
+
+            Output: the same list but the above adjustments applied to it. 
+        """
+        return_list = input_list
+
+        # remove any trailing 0 (silent) visemes at the end 
+        while len(return_list) > 0:
+            if return_list[-1][0] == 0:
+                    return_list.pop()
+            else: break
+
+        # merge any consecutive tuples that have the same viseme
+        if len(return_list) > 1:
+            current_index = 0 
+            while current_index < len(return_list) - 1:
+                current_viseme = return_list[current_index][0]
+                if current_viseme == return_list[current_index + 1][0]:
+                    next_item = return_list.pop(current_index + 1)
+                    new_time = return_list[current_index][1] + next_item[1]
+                    return_list[current_index] = (current_viseme, new_time)                   
+                else:
+                    current_index += 1
+
+        return return_list

@@ -9610,23 +9610,19 @@ python early:
         """
         A displayable which makes Monika's mouth motions for dialogue possible.
         """
-        STEP_START = "start"
-        STEP_END = "end"
-
-        current_img = None
-        current_step = STEP_START
-        next_step = STEP_END
-
-        DIS_DUR = 0.1
+        DIS_DUR = 0.01
 
         BLIT_COORDS = (0, 0)
-
 
         def __init__(self, norm_mouth_img, last_line):
             """
             Constructor
             """
             super(MASMoniTalkTransform, self).__init__(self)
+
+            # last_line should be mas_core._last_text.text[0].
+            self.visemes_list = store.mas_textanalysis.process_text(last_line)
+            self.visemes_list = store.mas_textanalysis.process_list(self.visemes_list)
 
             self.norm_mouth_code = norm_mouth_img
             self.norm_mouth_img = renpy.displayimage.ImageReference(norm_mouth_img)
@@ -9636,37 +9632,115 @@ python early:
             }
             for num in range(0, 19):
                 current_mouth_code = norm_mouth_img + "_viseme" + str(num)
-                img_map[current_mouth_code] = renpy.displayimage.ImageReference(norm_mouth_img + "_viseme" + str(num))
+                img_map[current_mouth_code] = renpy.displayimage.ImageReference(current_mouth_code)
 
             self.transform_map = dict()
 
-            for first_img_code in img_map:
-                for second_img_code in img_map:
-                    if first_img_code != second_img_code:
-                        self.transform.map[(first_img_code, second_img_code)] = renpy.display.transition.Dissolve(
-                            time=MASMoniTalkTransform.DIS_DUR,
-                            old_widget=img_map[first_img_code],
-                            new_widget=img_map[second_img_code],
-                            alpha=True
-                        )
+            # for first_img_code in img_map:
+            #     for second_img_code in img_map:
+            #         if first_img_code != second_img_code:
+            #             self.transform_map[(first_img_code, second_img_code)] = renpy.display.transition.Dissolve(
+            #                 time=MASMoniTalkTransform.DIS_DUR,
+            #                 old_widget=img_map[first_img_code],
+            #                 new_widget=img_map[second_img_code],
+            #                 alpha=True
+            #             )
+            
+            if len(self.visemes_list) > 0:
+                # Generate transitions for each consecutive pair of visemes.
+                # i.e. the transition between first and second, between second and third, all the way to between second-to-last and last.  
+                # Obviates the need to have transitions for every possible combination (~400) of visemes (commented out above).
+                if len(self.visemes_list) > 1:
+                    current_index = 0
+                    while current_index < len(self.visemes_list) - 1:
+                        # build tuple of current pair of visemes
+                        current_viseme = self.visemes_list[current_index]
+                        current_viseme_code = self.norm_mouth_code + "_viseme" + str(current_viseme[0])
+                        next_viseme = self.visemes_list[current_index + 1]
+                        next_viseme_code = self.norm_mouth_code + "_viseme" + str(next_viseme[0])
+                        current_tuple = (current_viseme_code, next_viseme_code)
+
+                        if current_tuple not in self.transform_map:
+                            self.transform_map[current_tuple] = renpy.display.transition.Dissolve(
+                                time=MASMoniTalkTransform.DIS_DUR,
+                                old_widget=img_map[current_viseme_code],
+                                new_widget=img_map[next_viseme_code],
+                                alpha=True
+                            )
+                        current_index += 1
+                
+                # One transition between the starting static expression and the first viseme.
+                first_viseme = self.visemes_list[0]
+                first_viseme_code = self.norm_mouth_code + "_viseme" + str(first_viseme[0])
+                self.transform_map[(self.norm_mouth_code, first_viseme_code)] = renpy.display.transition.Dissolve(
+                    time=MASMoniTalkTransform.DIS_DUR,
+                    old_widget = self.norm_mouth_img,
+                    new_widget = img_map[first_viseme_code],
+                    alpha=True
+                )
+
+                # Finally, one transition between the last viseme and the static expression. 
+                last_viseme = self.visemes_list[-1]
+                last_viseme_code = self.norm_mouth_code + "_viseme" + str(last_viseme[0])
+                self.transform_map[(last_viseme_code, self.norm_mouth_code)] = renpy.display.transition.Dissolve(
+                    time=MASMoniTalkTransform.DIS_DUR,
+                    old_widget = img_map[last_viseme_code],
+                    new_widget = self.norm_mouth_img,
+                    alpha=True
+                )
 
             self._last_st = 0.0
             self.current_st = 0.0
             self.redraw_st = 0.0
 
-            self.timing_information = mas_textanalysis.process_text(last_line)
             self.redraw_time = 0.01
+
+            self.last_viseme = None
+            self.current_viseme = None
+            self.current_img = self.norm_mouth_img
 
         def render(self, width, height, st, at):
             """
             Render of this disp
             """
 
-            img_render = renpy.render(self.current_img, width, height, render_st, at)
+            if st > self._last_st:
+                self.current_st += (st - self._last_st)
+            
+            self._last_st = st
+
+
+            if self.redraw_st is not None: # When self.redraw_st is None, we have finished the end of the animation.
+
+                if self.current_viseme is None: # Starting
+                    if len(self.visemes_list) == 0: # Starting with zero-length list. No dissolves needed. 
+                        self.current_img = self.norm_mouth_img
+                        self.redraw_st = None # Finished
+                    else: # if len(self.visemes_list) > 0: Starting with non-zero-length list. 
+                        self.current_viseme = self.visemes_list.pop(0)
+                        current_viseme_code = self.norm_mouth_code + "_viseme" + str(self.current_viseme[0])
+                        self.current_img = self.transform.map[(self.norm_mouth_img, current_viseme_code)]
+                        self.redraw_st = self.current_viseme[1]
+
+                elif self.current_st > self.redraw_st:
+                    self.current_st = 0.0
+                    self.last_viseme = self.current_viseme
+                    last_viseme_code = self.norm_mouth_code + "_viseme" + str(self.last_viseme[0])
+                    if len(self.visemes_list) == 0: # At end of visemes list. Dissolve to static expression.
+                        self.current_img = self.transform.map[(last_viseme_code, self.norm_mouth_img)]
+                        self.redraw_st = None # Finished
+                    else: # len(self.visemes_list) > 0: In middle of visemes list. Dissolve from previous to current.
+                        self.current_viseme = self.visemes_list.pop(0) 
+                        current_viseme_code = self.norm_mouth_code + "_viseme" + str(self.current_viseme[0])
+                        self.current_img = self.transform.map[(last_viseme_code, current_viseme_code)] 
+                        self.redraw_st = self.current_viseme[1]
+             
+            img_render = renpy.render(self.current_img, width, height, self.current_st, at)
             rv = renpy.Render(img_render.width, img_render.height)
             rv.blit(img_render, MASMoniTalkTransform.BLIT_COORDS)
 
-            renpy.redraw(self, redraw_time)
+            if self.redraw_st is not None:
+                renpy.redraw(self, self.redraw_st - self.current_st)
 
             return rv
 
