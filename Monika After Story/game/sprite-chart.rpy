@@ -9614,25 +9614,25 @@ python early:
 
         BLIT_COORDS = (0, 0)
 
-        def __init__(self, norm_mouth_img, last_line):
+        def __init__(self, norm_mouth_img):
             """
             Constructor
             """
             super(MASMoniTalkTransform, self).__init__(self)
 
-            # last_line should be mas_core._last_text.text[0].
+            last_line = mas_core._last_text.text[0]
             self.visemes_list = store.mas_textanalysis.process_text(last_line)
             self.visemes_list = store.mas_textanalysis.process_list(self.visemes_list)
 
             self.norm_mouth_code = norm_mouth_img
-            self.norm_mouth_img = renpy.displayimage.ImageReference(norm_mouth_img)
+            self.norm_mouth_img = renpy.display.image.ImageReference(norm_mouth_img)
 
             img_map = {
                 self.norm_mouth_code: self.norm_mouth_img
             }
-            for num in range(0, 19):
+            for num in range(0, 13):
                 current_mouth_code = norm_mouth_img + "_viseme" + str(num)
-                img_map[current_mouth_code] = renpy.displayimage.ImageReference(current_mouth_code)
+                img_map[current_mouth_code] = renpy.display.image.ImageReference(current_mouth_code)
 
             self.transform_map = dict()
 
@@ -9646,13 +9646,14 @@ python early:
             #                 alpha=True
             #             )
             
-            if len(self.visemes_list) > 0:
+            if self.visemes_list:
                 # Generate transitions for each consecutive pair of visemes.
                 # i.e. the transition between first and second, between second and third, all the way to between second-to-last and last.  
                 # Obviates the need to have transitions for every possible combination (~400) of visemes (commented out above).
-                if len(self.visemes_list) > 1:
+                
+                if len(self.visemes_list) > 1: # If there are two or more visemes there must be dissolves between them.
                     current_index = 0
-                    while current_index < len(self.visemes_list) - 1:
+                    for current_index in range(0, len(self.visemes_list) - 1):
                         # build tuple of current pair of visemes
                         current_viseme = self.visemes_list[current_index]
                         current_viseme_code = self.norm_mouth_code + "_viseme" + str(current_viseme[0])
@@ -9667,7 +9668,6 @@ python early:
                                 new_widget=img_map[next_viseme_code],
                                 alpha=True
                             )
-                        current_index += 1
                 
                 # One transition between the starting static expression and the first viseme.
                 first_viseme = self.visemes_list[0]
@@ -9713,27 +9713,27 @@ python early:
             if self.redraw_st is not None: # When self.redraw_st is None, we have finished the end of the animation.
 
                 if self.current_viseme is None: # Starting
-                    if len(self.visemes_list) == 0: # Starting with zero-length list. No dissolves needed. 
-                        self.current_img = self.norm_mouth_img
-                        self.redraw_st = None # Finished
-                    else: # if len(self.visemes_list) > 0: Starting with non-zero-length list. 
+                    if self.visemes_list: # if len(self.visemes_list) > 0: Starting with non-zero-length list. 
                         self.current_viseme = self.visemes_list.pop(0)
                         current_viseme_code = self.norm_mouth_code + "_viseme" + str(self.current_viseme[0])
                         self.current_img = self.transform.map[(self.norm_mouth_img, current_viseme_code)]
                         self.redraw_st = self.current_viseme[1]
+                    else: # Starting with zero-length list. No dissolves needed. 
+                        self.current_img = self.norm_mouth_img
+                        self.redraw_st = None # Finished
 
                 elif self.current_st > self.redraw_st:
                     self.current_st = 0.0
                     self.last_viseme = self.current_viseme
-                    last_viseme_code = self.norm_mouth_code + "_viseme" + str(self.last_viseme[0])
-                    if len(self.visemes_list) == 0: # At end of visemes list. Dissolve to static expression.
-                        self.current_img = self.transform.map[(last_viseme_code, self.norm_mouth_img)]
-                        self.redraw_st = None # Finished
-                    else: # len(self.visemes_list) > 0: In middle of visemes list. Dissolve from previous to current.
+                    last_viseme_code = self.norm_mouth_code + "_viseme" + str(self.last_viseme[0])                 
+                    if self.visemes_list: # len(self.visemes_list) > 0: In middle of visemes list. Dissolve from previous to current.
                         self.current_viseme = self.visemes_list.pop(0) 
                         current_viseme_code = self.norm_mouth_code + "_viseme" + str(self.current_viseme[0])
                         self.current_img = self.transform.map[(last_viseme_code, current_viseme_code)] 
                         self.redraw_st = self.current_viseme[1]
+                    else: # At end of visemes list. Dissolve to static expression.
+                        self.current_img = self.transform.map[(last_viseme_code, self.norm_mouth_img)]
+                        self.redraw_st = None # Finished
              
             img_render = renpy.render(self.current_img, width, height, self.current_st, at)
             rv = renpy.Render(img_render.width, img_render.height)
